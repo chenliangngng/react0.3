@@ -1,3 +1,5 @@
+import {Element, createElement} from './element'
+
 class Unit {
   constructor(element) {
     this._currentElement = element
@@ -14,9 +16,36 @@ class TextUnit extends Unit {
   }
 }
 
+class NativeUnit extends Unit{
+  getMarkUp(reactid) {
+    this._reactid = reactid
+    const {type, props} = this._currentElement
+    let tagStart = `<${type}`
+    let childString = ''
+    const tagEnd = `</${type}`
+    Object.keys(props).forEach((propName) => {
+      if (/^on[A-Z]/.test(propName)) {
+
+      } else if (propName === 'style') {
+
+      }else if (propName === 'className') {
+
+      }else if (propName === 'children') {
+
+      }else {
+        tagStart += ` ${propName}="${props[propName]}"`
+      }
+    })
+    return tagStart + ">" + childString + tagEnd
+  }
+}
+
 function createUnit(element) {
   if (typeof element === 'string' || typeof element === 'number'){
     return new TextUnit(element)
+  }
+  if (element instanceof Element && typeof element.type === 'string') {
+    return new NativeUnit(element)
   }
 }
 

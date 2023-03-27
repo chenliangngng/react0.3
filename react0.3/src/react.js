@@ -1,7 +1,9 @@
 import {createUnit} from './unit'
+import {createElement} from './element'
 
 const React ={
   render,
+  createElement
 } 
 
 function render (element, container) {
