@@ -1,10 +1,13 @@
+import {createUnit} from './unit'
+
 const React ={
   render,
-  rootIndex :0
 } 
 
 function render (element, container) {
-  container.innerHTML = `<span data-reactid=${React.rootIndex}>${element}</span>`
+  const unit = createUnit(element)
+  const markUp = unit.getMarkUp("0")
+  container.innerHTML = markUp
 }
 
 export default React
