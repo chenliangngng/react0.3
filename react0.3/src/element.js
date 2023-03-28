@@ -5,12 +5,9 @@ class Element {
   }
 }
 
-const createElement = (type, props ={}, ...children ) => {
+const createElement = (type, props = {}, ...children) => {
   props.children = children || []
   return new Element(type, props)
 }
 
-export {
-  Element,
-  createElement
-}
+export { Element, createElement }

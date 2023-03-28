@@ -1,14 +1,16 @@
-import React from './react'
+import React from "./react"
 
 const sayHello = () => {
-  console.log('hello')
+  console.log("hello")
 }
-const element = React.createElement('button', {
-  id: 'sayHello',
-  style: {color: 'red',  backgroundColor: 'green'},
-  onClick: sayHello,
+const element = React.createElement(
+  "button",
+  {
+    id: "sayHello",
+    style: { color: "red", backgroundColor: "green" },
+    onClick: sayHello,
   },
-  'say',
-  React.createElement('b', {}, 'hello')
+  "say",
+  React.createElement("b", {}, "hello")
 )
-React.render(element, document.getElementById('root'))
+React.render(element, document.getElementById("root"))

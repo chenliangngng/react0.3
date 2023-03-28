@@ -1,12 +1,12 @@
-import {createUnit} from './unit'
-import {createElement} from './element'
+import { createUnit } from "./unit"
+import { createElement } from "./element"
 
-const React ={
+const React = {
   render,
-  createElement
-} 
+  createElement,
+}
 
-function render (element, container) {
+function render(element, container) {
   const unit = createUnit(element)
   const markUp = unit.getMarkUp("0") // 返回HTML标记
   container.innerHTML = markUp
