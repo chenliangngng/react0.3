@@ -60,12 +60,26 @@ class NativeUnit extends Unit {
   }
 }
 
+class CompositeUnit extends Unit {
+  getMarkUp(reactid) {
+    this._reactid = reactid
+    const { type: Component, props } = this._currentElement
+    const componentInstance = new Component(props)
+    const renderElement = componentInstance.render()
+    const renderUnit = createUnit(renderElement)
+    return renderUnit.getMarkUp(reactid)
+  }
+}
+
 function createUnit(element) {
   if (typeof element === "string" || typeof element === "number") {
     return new TextUnit(element)
   }
   if (element instanceof Element && typeof element.type === "string") {
     return new NativeUnit(element)
+  }
+  if (element instanceof Element && typeof element.type === "function") {
+    return new CompositeUnit(element)
   }
 }
 

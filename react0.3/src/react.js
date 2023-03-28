@@ -1,9 +1,11 @@
 import { createUnit } from "./unit"
 import { createElement } from "./element"
+import { Component } from "./component"
 
 const React = {
   render,
   createElement,
+  Component,
 }
 
 function render(element, container) {
