@@ -64,10 +64,17 @@ class CompositeUnit extends Unit {
   getMarkUp(reactid) {
     this._reactid = reactid
     const { type: Component, props } = this._currentElement
-    const componentInstance = new Component(props)
+    const componentInstance = (this._componentInstance = new Component(props))
+    componentInstance.currentUnit = this
+    componentInstance?.componentWillMount?.()
     const renderElement = componentInstance.render()
-    const renderUnit = createUnit(renderElement)
-    return renderUnit.getMarkUp(reactid)
+    const renderUnitInstance = (this._renderUnitInstance =
+      createUnit(renderElement))
+    const renderedMarkUp = renderUnitInstance.getMarkUp(reactid)
+    $(document).on("mounted", () => {
+      componentInstance?.componentDidMount?.()
+    })
+    return renderedMarkUp
   }
 }
 
