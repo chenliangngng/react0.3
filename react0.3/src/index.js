@@ -11,10 +11,6 @@ class Counter extends React.Component {
   }
 
   componentDidMount() {
-    setInterval(() => {
-      this.increment()
-    }, 1000)
-
     console.log("Counter componentDidMount")
   }
 
@@ -26,24 +22,30 @@ class Counter extends React.Component {
     console.log("Counter componentDidUpdate")
   }
 
-  increment = () => {
+  handleClick = () => {
     this.setState({
       number: this.state.number + 1,
     })
   }
 
   render() {
-    // let p = React.createElement(
-    //   "p",
-    //   {
-    //     style: { color: "red" },
-    //   },
-    //   this.props.name,
-    //   this.state.number
-    // )
-    // let button = React.createElement("button", { onClick: this.increment }, "+")
-    // return React.createElement("div", { id: "counter" }, p, button)
-    return this.state.number
+    const p = React.createElement("p", {}, this.props.name, this.state.number)
+    const button = React.createElement(
+      "button",
+      { onClick: this.handleClick },
+      "+"
+    )
+    return React.createElement(
+      "div",
+      {
+        style: {
+          color: this.state.number % 2 === 0 ? "green" : "red",
+          backgroundColor: this.state.number % 2 === 0 ? "red" : "green",
+        },
+      },
+      p,
+      button
+    )
   }
 }
 

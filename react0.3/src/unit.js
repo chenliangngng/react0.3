@@ -1,6 +1,9 @@
 import { Element, createElement } from "./element"
 import $ from "jquery"
 
+let diffQueue // 差异队列
+let updateDepth = 0 // 更新级别
+
 class Unit {
   constructor(element) {
     this._currentElement = element
@@ -73,7 +76,8 @@ class NativeUnit extends Unit {
     const { type, props } = this._currentElement
     let tagStart = `<${type} data-reactid=${this._reactid}`
     let childString = ""
-    const tagEnd = `</${type}`
+    const tagEnd = `</${type}>`
+    this._renderedChildrenUnits = []
     Object.keys(props).forEach((propName) => {
       if (/^on[A-Z]/.test(propName)) {
         const eventName = propName.slice(2).toLocaleLowerCase()
@@ -99,6 +103,7 @@ class NativeUnit extends Unit {
         const { children } = props
         children.forEach((child, index) => {
           const childUnit = createUnit(child)
+          this._renderedChildrenUnits.push(childUnit)
           const childMarkUp = childUnit.getMarkUp(`${this._reactid}.${index}`)
           childString += childMarkUp
         })
@@ -107,6 +112,83 @@ class NativeUnit extends Unit {
       }
     })
     return tagStart + ">" + childString + tagEnd
+  }
+  update(nextElement) {
+    const oldProps = this._currentElement.props
+    const newProps = nextElement.props
+    this.updateDOMProperties(oldProps, newProps)
+    this.updateDOMChildren(nextElement.props.children)
+  }
+  updateDOMChildren(newChildrenElement) {
+    this.diff(diffQueue, newChildrenElement)
+  }
+  diff(diffQueue, newChildrenElement) {
+    const oldChildrenUnitMap = this.getOldChildrenMap(
+      this._renderedChildrenUnits
+    )
+    const newChildren = this.getNewChildren(
+      oldChildrenUnitMap,
+      newChildrenElement
+    )
+  }
+  getNewChildren(oldChildrenUnitMap, newChildrenElement) {
+    const newChildren = []
+    newChildrenElement.forEach((newElement, index) => {
+      const newKey = newElement?.props?.key || String(index)
+      const oldUnit = oldChildrenUnitMap[newKey]
+      const oldElement = oldUnit._currentElement
+      if (shouldDeepCompare(oldElement, newElement)) {
+        oldUnit.update(newElement)
+        newChildren.push(oldUnit)
+      } else {
+        const nextUnit = createUnit(newElement)
+        newChildren.push(nextUnit)
+      }
+    })
+    return newChildren
+  }
+  getOldChildrenMap(renderedChildrenUnits = []) {
+    const map = {}
+    renderedChildrenUnits.forEach((unit, index) => {
+      const key = unit?._currentElement?.props?.key || String(index)
+      map[key] = unit
+    })
+    return map
+  }
+  updateDOMProperties(oldProps, newProps) {
+    Object.keys(oldProps).forEach((propName) => {
+      if (!newProps.hasOwnProperty(propName)) {
+        $(`[data-reactid="${this._reactid}"]`).removeAttr(propName)
+      }
+      if (/^on[A-Z]/.test(propName)) {
+        $(document).undelegate(`.${this._reactid}`)
+      }
+    })
+    Object.keys(newProps).forEach((propName) => {
+      if (propName === "children") {
+        return
+      }
+      if (/^on[A-Z]/.test(propName)) {
+        const eventName = propName.slice(2).toLocaleLowerCase()
+        $(document).delegate(
+          `[data-reactid="${this._reactid}"]`,
+          `${eventName}.${this._reactid}`,
+          newProps[propName]
+        )
+      } else if (propName === "style") {
+        const styleObj = newProps[propName]
+        Object.entries(styleObj).forEach(([attr, value]) => {
+          $(`[data-reactid="${this._reactid}"]`).css(attr, value)
+        })
+      } else if (propName === "className") {
+        $(`[data-reactid="${this._reactid}"]`).attr("class", newProps[propName])
+      } else {
+        $(`[data-reactid="${this._reactid}"]`).prop(
+          propName,
+          newProps[propName]
+        )
+      }
+    })
   }
 }
 
