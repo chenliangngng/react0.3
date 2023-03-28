@@ -1,4 +1,5 @@
 import {Element, createElement} from './element'
+import $ from 'jquery'
 
 class Unit {
   constructor(element) {
@@ -20,19 +21,29 @@ class NativeUnit extends Unit{
   getMarkUp(reactid) {
     this._reactid = reactid
     const {type, props} = this._currentElement
-    let tagStart = `<${type}`
+    let tagStart = `<${type} data-reactid=${this._reactid}`
     let childString = ''
     const tagEnd = `</${type}`
     Object.keys(props).forEach((propName) => {
       if (/^on[A-Z]/.test(propName)) {
-
+        const eventName = propName.slice(2).toLocaleLowerCase()
+        $(document).delegate(`[data-reactid="${this._reactid}"]`, `${eventName}.${this._reactid}`, props[propName])
       } else if (propName === 'style') {
-
-      }else if (propName === 'className') {
-
-      }else if (propName === 'children') {
-
-      }else {
+        const styleObj = props[propName]
+        const styleStr = Object.entries(styleObj).map(([attr, value]) => {
+          return `${attr.replace(/[A-Z]/g, m => `-${m.toLocaleLowerCase()}`)}:${value}`
+        }).join(';')
+        tagStart += ` style="${styleStr}"`
+      } else if (propName === 'className') {
+        tagStart += ` class=="${props[propName]}"`
+      } else if (propName === 'children') {
+        const {children} = props
+        children.forEach((child,index) => {
+          const childUnit = createUnit(child)
+          const childMarkUp = childUnit.getMarkUp(`${this._reactid}.${index}`)
+          childString += childMarkUp
+        })
+      } else {
         tagStart += ` ${propName}="${props[propName]}"`
       }
     })
