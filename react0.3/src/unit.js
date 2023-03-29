@@ -1,7 +1,8 @@
 import { Element, createElement } from "./element"
 import $ from "jquery"
+import types from "./types"
 
-let diffQueue // 差异队列
+let diffQueue = [] // 差异队列
 let updateDepth = 0 // 更新级别
 
 class Unit {
@@ -60,7 +61,7 @@ function shouldDeepCompare(oldElement, newElement) {
 class TextUnit extends Unit {
   getMarkUp(reactid) {
     this._reactid = reactid
-    return `<span data-reactid=${reactid}>${this._currentElement}</span>`
+    return `<span data-reactid="${reactid}">${this._currentElement}</span>`
   }
   update(nextElement) {
     if (this._currentElement !== nextElement) {
@@ -103,6 +104,7 @@ class NativeUnit extends Unit {
         const { children } = props
         children.forEach((child, index) => {
           const childUnit = createUnit(child)
+          childUnit._mountIndex = index
           this._renderedChildrenUnits.push(childUnit)
           const childMarkUp = childUnit.getMarkUp(`${this._reactid}.${index}`)
           childString += childMarkUp
@@ -120,32 +122,134 @@ class NativeUnit extends Unit {
     this.updateDOMChildren(nextElement.props.children)
   }
   updateDOMChildren(newChildrenElement) {
+    updateDepth++
     this.diff(diffQueue, newChildrenElement)
+    updateDepth--
+    if (updateDepth === 0) {
+      this.patch(diffQueue)
+      diffQueue = []
+    }
+  }
+  patch(diffQueue) {
+    const deleteChildren = []
+    const deleteMap = {}
+
+    diffQueue.forEach((difference, index) => {
+      if (difference.type === types.MOVE || difference.type === types.REMOVE) {
+        const { fromIndex } = difference
+        const oldChild = $(difference.parentNode.children().get(fromIndex))
+        deleteMap[fromIndex] = oldChild
+        deleteChildren.push(oldChild)
+      }
+    })
+    $.each(deleteChildren, (index, item) => $(item).remove())
+
+    diffQueue.forEach((difference) => {
+      switch (difference.type) {
+        case types.INSERRT:
+          this.insertChildAt(
+            difference.parentNode,
+            difference.toIndex,
+            $(difference.markUp)
+          )
+          break
+
+        case types.MOVE:
+          this.insertChildAt(
+            difference.parentNode,
+            difference.toIndex,
+            deleteMap[difference.fromIndex]
+          )
+          break
+        default:
+          break
+      }
+    })
+  }
+  insertChildAt(parentNode, index, newNode) {
+    const oldChild = parentNode.children().get(index)
+    oldChild ? newNode.insertBefore(oldChild) : newNode.appendTo(parentNode)
   }
   diff(diffQueue, newChildrenElement) {
     const oldChildrenUnitMap = this.getOldChildrenMap(
       this._renderedChildrenUnits
     )
-    const newChildren = this.getNewChildren(
+    const { newChildrenUnitMap, newChildrenUnits } = this.getNewChildren(
       oldChildrenUnitMap,
       newChildrenElement
     )
+    let lastIndex = 0
+    newChildrenUnits.forEach((newUnit, index) => {
+      const newKey = newUnit._currentElement?.props?.key || String(index)
+      const oldChildUnit = oldChildrenUnitMap[newKey]
+      if (oldChildUnit === newUnit) {
+        if (oldChildUnit._mountIndex < lastIndex) {
+          diffQueue.push({
+            parentId: this._reactid,
+            parentNode: $(`[data-reactid="${this._reactid}"]`),
+            type: types.MOVE,
+            fromIndex: oldChildUnit._mountIndex,
+            toIndex: index,
+          })
+        }
+        lastIndex = Math.max(lastIndex, oldChildUnit._mountIndex)
+      } else {
+        if (oldChildUnit) {
+          diffQueue.push({
+            parentId: this._reactid,
+            parentNode: $(`[data-reactid="${this._reactid}"]`),
+            type: types.REMOVE,
+            fromIndex: oldChildUnit._mountIndex,
+          })
+        } else {
+          diffQueue.push({
+            parentId: this._reactid,
+            parentNode: $(`[data-reactid="${this._reactid}"]`),
+            type: types.INSERRT,
+            toIndex: index,
+            markUp: newUnit.getMarkUp(`${this._reactid}.${index}`),
+          })
+        }
+      }
+      newUnit._mountIndex = index
+    })
+    Object.keys(oldChildrenUnitMap).forEach((key) => {
+      const oldChild = oldChildrenUnitMap[key]
+      if (!newChildrenUnitMap.hasOwnProperty(key)) {
+        diffQueue.push({
+          parentId: this._reactid,
+          parentNode: $(`[data-reactid="${this._reactid}"]`),
+          type: types.REMOVE,
+          fromIndex: oldChild._mountIndex,
+        })
+        $(document).off(`.${oldChild._reactid}`)
+      }
+    })
   }
   getNewChildren(oldChildrenUnitMap, newChildrenElement) {
-    const newChildren = []
+    const newChildrenUnits = []
+    const newChildrenUnitMap = {}
     newChildrenElement.forEach((newElement, index) => {
       const newKey = newElement?.props?.key || String(index)
       const oldUnit = oldChildrenUnitMap[newKey]
+      if (!oldUnit) {
+        const nextUnit = createUnit(newElement)
+        newChildrenUnits.push(nextUnit)
+        newChildrenUnitMap[newKey] = nextUnit
+        return
+      }
       const oldElement = oldUnit._currentElement
       if (shouldDeepCompare(oldElement, newElement)) {
         oldUnit.update(newElement)
-        newChildren.push(oldUnit)
+        newChildrenUnits.push(oldUnit)
+        newChildrenUnitMap[newKey] = oldUnit
       } else {
         const nextUnit = createUnit(newElement)
-        newChildren.push(nextUnit)
+        newChildrenUnits.push(nextUnit)
+        newChildrenUnitMap[newKey] = nextUnit
       }
     })
-    return newChildren
+    return { newChildrenUnitMap, newChildrenUnits }
   }
   getOldChildrenMap(renderedChildrenUnits = []) {
     const map = {}

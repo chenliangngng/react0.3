@@ -3,49 +3,88 @@ import React from "./react"
 class Counter extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { number: 0 }
-  }
-
-  componentWillMount() {
-    console.log("Counter componentWillMount")
+    this.state = { odd: true }
   }
 
   componentDidMount() {
-    console.log("Counter componentDidMount")
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    return true
-  }
-
-  componentDidUpdate() {
-    console.log("Counter componentDidUpdate")
-  }
-
-  handleClick = () => {
-    this.setState({
-      number: this.state.number + 1,
-    })
+    setTimeout(() => {
+      this.setState({ odd: !this.state.odd })
+    }, 1000)
   }
 
   render() {
-    const p = React.createElement("p", {}, this.props.name, this.state.number)
-    const button = React.createElement(
-      "button",
-      { onClick: this.handleClick },
-      "+"
-    )
-    return React.createElement(
-      "div",
-      {
-        style: {
-          color: this.state.number % 2 === 0 ? "green" : "red",
-          backgroundColor: this.state.number % 2 === 0 ? "red" : "green",
-        },
-      },
-      p,
-      button
-    )
+    return this.state.odd
+      ? React.createElement(
+          "ul",
+          { id: "old" },
+          React.createElement(
+            "li",
+            {
+              key: "A",
+            },
+            "A"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "B",
+            },
+            "B"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "C",
+            },
+            "C"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "D",
+            },
+            "D"
+          )
+        )
+      : React.createElement(
+          "ul",
+          { id: "new" },
+          React.createElement(
+            "li",
+            {
+              key: "A",
+            },
+            "A1"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "C",
+            },
+            "C1"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "B",
+            },
+            "B1"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "E",
+            },
+            "E1"
+          ),
+          React.createElement(
+            "li",
+            {
+              key: "F",
+            },
+            "F"
+          )
+        )
   }
 }
 
