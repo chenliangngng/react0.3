@@ -138,7 +138,10 @@ class NativeUnit extends Unit {
       if (difference.type === types.MOVE || difference.type === types.REMOVE) {
         const { fromIndex } = difference
         const oldChild = $(difference.parentNode.children().get(fromIndex))
-        deleteMap[fromIndex] = oldChild
+        if (!deleteMap[difference.parentId]) {
+          deleteMap[difference.parentId] = {}
+        }
+        deleteMap[difference.parentId][fromIndex] = oldChild
         deleteChildren.push(oldChild)
       }
     })
@@ -158,7 +161,7 @@ class NativeUnit extends Unit {
           this.insertChildAt(
             difference.parentNode,
             difference.toIndex,
-            deleteMap[difference.fromIndex]
+            deleteMap[difference.parentId][difference.fromIndex]
           )
           break
         default:
@@ -201,6 +204,10 @@ class NativeUnit extends Unit {
             type: types.REMOVE,
             fromIndex: oldChildUnit._mountIndex,
           })
+          this._renderedChildrenUnits = this._renderedChildrenUnits.filter(
+            (item) => item !== oldChildUnit
+          )
+          $(document).undelegate(`.${oldChildUnit._reactid}`)
         } else {
           diffQueue.push({
             parentId: this._reactid,
@@ -222,7 +229,10 @@ class NativeUnit extends Unit {
           type: types.REMOVE,
           fromIndex: oldChild._mountIndex,
         })
-        $(document).off(`.${oldChild._reactid}`)
+        this._renderedChildrenUnits = this._renderedChildrenUnits.filter(
+          (item) => item !== oldChild
+        )
+        $(document).undelegate(`.${oldChild._reactid}`)
       }
     })
   }
@@ -232,13 +242,8 @@ class NativeUnit extends Unit {
     newChildrenElement.forEach((newElement, index) => {
       const newKey = newElement?.props?.key || String(index)
       const oldUnit = oldChildrenUnitMap[newKey]
-      if (!oldUnit) {
-        const nextUnit = createUnit(newElement)
-        newChildrenUnits.push(nextUnit)
-        newChildrenUnitMap[newKey] = nextUnit
-        return
-      }
-      const oldElement = oldUnit._currentElement
+
+      const oldElement = oldUnit?._currentElement
       if (shouldDeepCompare(oldElement, newElement)) {
         oldUnit.update(newElement)
         newChildrenUnits.push(oldUnit)
@@ -247,6 +252,7 @@ class NativeUnit extends Unit {
         const nextUnit = createUnit(newElement)
         newChildrenUnits.push(nextUnit)
         newChildrenUnitMap[newKey] = nextUnit
+        this._renderedChildrenUnits[index] = nextUnit
       }
     })
     return { newChildrenUnitMap, newChildrenUnits }

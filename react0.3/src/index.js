@@ -1,93 +1,46 @@
 import React from "./react"
 
-class Counter extends React.Component {
+class Todos extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { odd: true }
+    this.state = { list: [], text: "" }
   }
-
-  componentDidMount() {
-    setTimeout(() => {
-      this.setState({ odd: !this.state.odd })
-    }, 1000)
+  onChange = (e) => {
+    this.setState({ text: e.target.value })
   }
-
+  handleClick = () => {
+    this.setState({ list: [...this.state.list, this.state.text], text: "" })
+  }
+  onDel = (index) => {
+    this.setState({
+      list: [
+        ...this.state.list.slice(0, index),
+        ...this.state.list.slice(index + 1),
+      ],
+    })
+  }
   render() {
-    return this.state.odd
-      ? React.createElement(
-          "ul",
-          { id: "old" },
-          React.createElement(
-            "li",
-            {
-              key: "A",
-            },
-            "A"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "B",
-            },
-            "B"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "C",
-            },
-            "C"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "D",
-            },
-            "D"
-          )
-        )
-      : React.createElement(
-          "ul",
-          { id: "new" },
-          React.createElement(
-            "li",
-            {
-              key: "A",
-            },
-            "A1"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "C",
-            },
-            "C1"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "B",
-            },
-            "B1"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "E",
-            },
-            "E1"
-          ),
-          React.createElement(
-            "li",
-            {
-              key: "F",
-            },
-            "F"
-          )
-        )
+    const input = React.createElement("input", {
+      onKeyup: this.onChange,
+      value: this.state.text,
+    })
+    const button = React.createElement(
+      "button",
+      { onClick: this.handleClick },
+      "+"
+    )
+    const lists = this.state.list.map((item, index) =>
+      React.createElement(
+        "div",
+        {},
+        item,
+        React.createElement("button", { onClick: () => this.onDel(index) }, "x")
+      )
+    )
+    return React.createElement("div", {}, input, button, ...lists)
   }
 }
 
-const element = React.createElement(Counter, { name: "计数器" })
+const element = React.createElement(Todos, {})
 
 React.render(element, document.getElementById("root"))
